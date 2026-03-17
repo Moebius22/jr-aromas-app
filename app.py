@@ -139,7 +139,7 @@ try:
         col_cat = [c for c in df_consumibles.columns if 'categor' in c.lower()][0]
         for _, r in df_consumibles.iterrows():
             es_esencia = "esencia" in str(r[col_cat]).lower()
-            limite = 0.3 if es_esencia else 5
+            limite = 0.1 if es_esencia else 5
             if r["Cantidad"] < limite:
                 emoji = "🧪" if es_esencia else "🛠️"
                 st.markdown(f'<div class="alerta-stock">{emoji} CONSUMIBLE: <b>{r["Item"]}</b> ({r["Cantidad"]} {r["Unidad"]})</div>', unsafe_allow_html=True)
