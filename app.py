@@ -1,9 +1,3 @@
-Perfecto, vamos a ajustar la "función del reporte" para que haga esa limpieza automática. Ahora, cuando generes el Reporte de Inventario, el código va a filtrar solo esas 4 columnas (ID, Producto, Categoría, Cantidad) y va a ignorar el precio o las fragancias, para que sea un informe técnico de stock bien limpio.
-
-Aquí tenés el código completo para copiar y reemplazar en GitHub:
-
-app.py (Versión con Reporte Filtrado)
-Python
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
