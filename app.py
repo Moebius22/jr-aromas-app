@@ -51,7 +51,7 @@ st.markdown("""
 
 # 3. Sección de Encabezado con Logo y Título
 # Intentamos cargar el logo.png desde la raíz del repositorio
-logo_path = "logo.png"
+logo_path = "logo.PNG"
 
 # Creamos columnas para el logo y el texto del título
 col_logo, col_titulo = st.columns([1, 4]) # Ajustá los pesos [1, 4] según el tamaño de tu logo
