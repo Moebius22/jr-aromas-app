@@ -15,14 +15,14 @@ st.markdown("""
     .main {
         background-color: #f5f5f5;
     }
-    .stMetric {
+    [data-testid="stMetric"] {
         background-color: #ffffff;
         padding: 15px;
         border-radius: 10px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True)
 
 st.title("🌿 JR Aromas de Autor")
 st.subheader("Sistema de Gestión de Inventario")
@@ -30,7 +30,7 @@ st.subheader("Sistema de Gestión de Inventario")
 # --- CONEXIÓN A GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Función para leer datos actualizados
+# Función para leer datos
 def load_data():
     return conn.read(worksheet="Stock", ttl="0")
 
@@ -50,12 +50,13 @@ with tab1:
     busqueda = st.text_input("🔍 Buscar por nombre de aroma o categoría...", placeholder="Ej: Vainilla")
     
     if busqueda:
+        # Convertimos todo a string para evitar errores si hay celdas vacías
         df_display = df[df['Producto'].astype(str).str.contains(busqueda, case=False) | 
                         df['Categoría'].astype(str).str.contains(busqueda, case=False)]
     else:
         df_display = df
 
-    # Mostrar la tabla con formato amigable
+    # Mostrar la tabla
     st.dataframe(
         df_display, 
         use_container_width=True, 
@@ -79,14 +80,14 @@ with tab2:
         
         with col_form2:
             nueva_fragancia = st.text_input("Notas Olfativas (Ej: Cítrico)")
-            nueva_cant = st.number_input("Cantidad", min_value=1, step=1)
-            nuevo_precio = st.number_input("Precio Unitario", min_value=0.0)
+            nueva_cant = st.number_input("Cantidad", min_value=1, value=1, step=1)
+            nuevo_precio = st.number_input("Precio Unitario", min_value=0.0, value=0.0)
             
         submitted = st.form_submit_button("Registrar en Inventario")
         
         if submitted:
             if nuevo_nombre:
-                # Aquí creamos la nueva fila
+                # Crear nueva fila
                 nueva_fila = pd.DataFrame([{
                     "ID": len(df) + 1,
                     "Producto": nuevo_nombre,
@@ -96,13 +97,13 @@ with tab2:
                     "Precio": nuevo_precio
                 }])
                 
-                # Unimos con el excel actual
+                # Unir y subir
                 updated_df = pd.concat([df, nueva_fila], ignore_index=True)
-                
-                # Subimos a Google Sheets
                 conn.update(worksheet="Stock", data=updated_df)
+                
                 st.success(f"✅ {nuevo_nombre} guardado correctamente!")
                 st.balloons()
+                st.rerun() # Recarga la app para mostrar los cambios
             else:
                 st.warning("Por favor, ingresá al menos el nombre del producto.")
 
@@ -111,6 +112,7 @@ with tab3:
     
     m1, m2, m3 = st.columns(3)
     
+    # Cálculos rápidos
     total_items = df['Cantidad'].sum()
     valor_total = (df['Cantidad'] * df['Precio']).sum()
     alerta_stock = df[df['Cantidad'] < 5].shape[0]
