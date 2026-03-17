@@ -6,8 +6,36 @@ import os
 import base64
 
 # 1. Configuración de la página
-st.set_page_config(page_title="JR Aromas - Gestión Pro", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="JR Aromas - Privado", page_icon="🌿", layout="wide")
 
+# 2. SISTEMA DE LOGIN SIMPLE
+def check_password():
+    """Devuelve True si el usuario ingresó la contraseña correcta."""
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
+    if st.session_state["password_correct"]:
+        return True
+
+    # Pantalla de Login
+    st.markdown('<h2 style="color: #2e7d32; text-align: center;">🔐 Acceso Restringido - JR Aromas</h2>', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        password_input = st.text_input("JR2026", type="password")
+        if st.button("Entrar"):
+            # --- CAMBIÁ LA CONTRASEÑA ACÁ ---
+            if password_input == "admin123": 
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error("❌ Contraseña incorrecta")
+    return False
+
+# Si no pasa el login, se detiene acá y no muestra nada más
+if not check_password():
+    st.stop()
+
+# --- SI LLEGA ACÁ, LA CONTRASEÑA ES CORRECTA Y MUESTRA LA APP ---
 # 2. Estilo visual (CSS)
 st.markdown("""
     <style>
