@@ -1,9 +1,11 @@
+import streamlit as st  # <--- ESTA ES LA LÍNEA QUE FALTA
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
 import os
 import base64
 
-# 1. Configuración de la página
+# 1. Configuración de la página (DEBE IR DESPUÉS DEL IMPORT)
 st.set_page_config(page_title="Gestión JR Aromas", page_icon="🌿", layout="wide")
 
 # 2. SISTEMA DE SEGURIDAD
