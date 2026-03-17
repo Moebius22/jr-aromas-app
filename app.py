@@ -27,7 +27,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 3. Encabezado con Logo
-logo_path = "logo.png"
+logo_path = "logo.PNG"
 col_l, col_t = st.columns([1, 4])
 with col_l:
     if os.path.exists(logo_path): st.image(logo_path, width=120)
