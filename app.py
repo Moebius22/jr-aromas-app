@@ -20,7 +20,7 @@ def check_password():
     with col2:
         password_input = st.text_input("Contraseña", type="password")
         if st.button("Entrar"):
-            if password_input == "admin123": # <--- CAMBIÁ TU CONTRASEÑA ACÁ
+            if password_input == "JR2026": # <--- CAMBIÁ TU CONTRASEÑA ACÁ
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
