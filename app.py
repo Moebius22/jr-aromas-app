@@ -1,11 +1,3 @@
-¡Excelente idea! Para que la app sea realmente útil, vamos a agregar una cuarta pestaña llamada "🛒 Registrar Venta".
-
-En esta sección, tu viejo podrá seleccionar el aroma de una lista desplegable, poner cuántos vendió, y la app se encargará de restar esa cantidad del Google Sheets automáticamente.
-
-Aquí tenés el código completo de app.py. Solo tenés que borrar todo lo que tenés en GitHub y pegar esto:
-
-app.py (Versión con Botón de Venta)
-Python
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
