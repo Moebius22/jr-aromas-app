@@ -20,7 +20,6 @@ def check_password():
     with col2:
         password_input = st.text_input("Contraseña", type="password")
         if st.button("Entrar"):
-            # Podés cambiar 'admin123' por tu clave personal
             if password_input == "JR2026": 
                 st.session_state["password_correct"] = True
                 st.rerun()
@@ -43,7 +42,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 4. Encabezado con Logo (.PNG corregido)
+# 4. Encabezado con Logo
 logo_path = "logo.PNG"
 col_l, col_t = st.columns([1, 4])
 with col_l:
@@ -55,23 +54,12 @@ with col_t:
     st.markdown('<h1 style="color: #2e7d32; margin-bottom: 0;">JR Aromas de Autor</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color: #666;">Panel de Gestión Integral - Pehuajó</p>', unsafe_allow_html=True)
 
-# 5. Conexión y Funciones de Reporte
+# 5. Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def get_html_report(df, titulo):
     now = datetime.now().strftime("%d/%m/%Y %H:%M")
-    html = f"""
-    <html><head><meta charset="UTF-8"><style>
-    body {{ font-family: sans-serif; margin: 40px; color: #333; }}
-    h1 {{ color: #2e7d32; border-bottom: 2px solid #2e7d32; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-    th {{ background-color: #2e7d32; color: white; padding: 10px; text-align: left; }}
-    td {{ padding: 8px; border-bottom: 1px solid #ddd; }}
-    </style></head><body>
-    <h1>{titulo}</h1><p>Fecha: {now}</p>
-    {df.to_html(index=False)}
-    </body></html>
-    """
+    html = f"<html><head><meta charset='UTF-8'><style>body {{ font-family: sans-serif; margin: 40px; }} h1 {{ color: #2e7d32; }} table {{ width: 100%; border-collapse: collapse; }} th {{ background: #2e7d32; color: white; padding: 10px; }} td {{ padding: 8px; border-bottom: 1px solid #ddd; }}</style></head><body><h1>{titulo}</h1><p>Generado: {now}</p>{df.to_html(index=False)}</body></html>"
     return html
 
 def download_link(content, filename, text):
@@ -79,43 +67,40 @@ def download_link(content, filename, text):
     return f'<a href="data:text/html;base64,{b64}" download="{filename}" style="text-decoration: none;"><button style="width:100%; background-color:#1976d2; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">{text}</button></a>'
 
 try:
-    # Carga de datos
     df_stock = conn.read(worksheet="Stock", ttl=0)
     df_ventas = conn.read(worksheet="Ventas", ttl=0)
     df_consumibles = conn.read(worksheet="Consumibles", ttl=0)
 
+    # Limpieza de nombres de columnas para evitar el KeyError
+    df_stock.columns = df_stock.columns.str.strip()
+    df_consumibles.columns = df_consumibles.columns.str.strip()
+
     tabs = st.tabs(["📦 Stock Venta", "🧪 Consumibles", "🛒 Nueva Venta", "➕ Cargar/Reponer", "📊 Reportes"])
 
-    # --- TAB 1: STOCK PRODUCTOS ---
     with tabs[0]:
         st.write("### Inventario de Productos")
         st.dataframe(df_stock, use_container_width=True, hide_index=True)
 
-    # --- TAB 2: CONSUMIBLES ---
     with tabs[1]:
         st.write("### Insumos y Materia Prima")
         st.dataframe(df_consumibles, use_container_width=True, hide_index=True)
         st.divider()
-        st.write("#### 📉 Registrar Uso de Insumo")
+        st.write("#### 📉 Registrar Uso")
         with st.form("uso_insumo"):
             insumo_sel = st.selectbox("Insumo", df_consumibles['Item'].tolist())
             cant_uso = st.number_input("Cantidad utilizada", min_value=0.01, step=0.01)
-            st.markdown('<div class="btn-consumo">', unsafe_allow_html=True)
-            if st.form_submit_button("Descontar Insumo"):
+            if st.form_submit_button("Descontar"):
                 idx_c = df_consumibles[df_consumibles['Item'] == insumo_sel].index[0]
                 if df_consumibles.at[idx_c, 'Cantidad'] >= cant_uso:
                     df_consumibles.at[idx_c, 'Cantidad'] -= cant_uso
                     conn.update(worksheet="Consumibles", data=df_consumibles)
-                    st.success("Descontado correctamente"); st.rerun()
-                else: st.error("No hay suficiente cantidad")
-            st.markdown('</div>', unsafe_allow_html=True)
+                    st.success("Actualizado"); st.rerun()
+                else: st.error("Sin stock suficiente")
 
-    # --- TAB 3: NUEVA VENTA ---
     with tabs[2]:
         with st.form("venta"):
             p = st.selectbox("Producto", df_stock['Producto'].tolist())
             c = st.number_input("Cantidad", min_value=1)
-            st.markdown('<div class="btn-venta">', unsafe_allow_html=True)
             if st.form_submit_button("Registrar Venta"):
                 idx = df_stock[df_stock['Producto'] == p].index[0]
                 if df_stock.at[idx, 'Cantidad'] >= c:
@@ -125,11 +110,9 @@ try:
                     conn.update(worksheet="Ventas", data=pd.concat([df_ventas.dropna(how='all', axis=1), nv], ignore_index=True))
                     st.success("Venta guardada"); st.rerun()
                 else: st.error("Sin stock")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- TAB 4: CARGAR / REPONER ---
     with tabs[3]:
-        tipo = st.radio("Tipo de carga", ["Producto Final", "Consumible"], horizontal=True)
+        tipo = st.radio("Tipo", ["Producto Final", "Consumible"], horizontal=True)
         with st.form("carga"):
             if tipo == "Producto Final":
                 n = st.text_input("Nombre Aroma"); cat = st.text_input("Categoría")
@@ -140,36 +123,35 @@ try:
                     st.success("Guardado"); st.rerun()
             else:
                 n_i = st.text_input("Nombre Insumo"); cat_i = st.text_input("Categoría (ej: Esencia)")
-                q_i = st.number_input("Cantidad", min_value=0.01); uni = st.text_input("Unidad (ej: Litros)")
+                q_i = st.number_input("Cantidad", min_value=0.01); uni = st.text_input("Unidad")
                 if st.form_submit_button("Guardar Insumo"):
                     nf_i = pd.DataFrame([{"ID": len(df_consumibles)+1, "Item": n_i, "Categoría": cat_i, "Cantidad": q_i, "Unidad": uni}])
                     conn.update(worksheet="Consumibles", data=pd.concat([df_consumibles, nf_i], ignore_index=True))
                     st.success("Insumo Cargado"); st.rerun()
 
-    # --- TAB 5: REPORTES Y ALERTAS (Lógica Esencia 0.3) ---
     with tabs[4]:
         st.write("### ⚠️ Alertas de Reposición")
-        
-        # Alertas Productos (Límite 5)
+        # Alertas Productos
         for _, r in df_stock[df_stock['Cantidad'] < 5].iterrows():
-            st.markdown(f'<div class="alerta-stock">📦 PRODUCTO: <b>{r["Producto"]}</b> ({int(r['Cantidad'])} un)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="alerta-stock">📦 PRODUCTO: <b>{r["Producto"]}</b> ({int(r["Cantidad"])} un)</div>', unsafe_allow_html=True)
             
-        # Alertas Consumibles (Lógica especial Esencia < 0.3)
+        # Alertas Consumibles con búsqueda flexible de la columna Categoría
+        col_cat = [c for c in df_consumibles.columns if 'categor' in c.lower()][0]
         for _, r in df_consumibles.iterrows():
-            es_esencia = str(r["Categoría"]).strip().lower() == "esencia"
+            es_esencia = "esencia" in str(r[col_cat]).lower()
             limite = 0.3 if es_esencia else 5
             if r["Cantidad"] < limite:
                 emoji = "🧪" if es_esencia else "🛠️"
                 st.markdown(f'<div class="alerta-stock">{emoji} CONSUMIBLE: <b>{r["Item"]}</b> ({r["Cantidad"]} {r["Unidad"]})</div>', unsafe_allow_html=True)
 
         st.divider()
-        st.write("### 📥 Descargar Reportes")
+        st.write("### 📥 Reportes")
         col1, col2 = st.columns(2)
         with col1:
-            df_rep_s = df_stock[["ID", "Producto", "Categoría", "Cantidad"]]
-            st.markdown(download_link(get_html_report(df_rep_s, "Stock Actual"), "stock.html", "Bajar Stock"), unsafe_allow_html=True)
+            df_rep = df_stock[["ID", "Producto", "Categoría", "Cantidad"]] if "Categoría" in df_stock.columns else df_stock
+            st.markdown(download_link(get_html_report(df_rep, "Stock"), "stock.html", "Bajar Stock"), unsafe_allow_html=True)
         with col2:
-            st.markdown(download_link(get_html_report(df_ventas, "Historial de Ventas"), "ventas.html", "Bajar Ventas"), unsafe_allow_html=True)
+            st.markdown(download_link(get_html_report(df_ventas, "Ventas"), "ventas.html", "Bajar Ventas"), unsafe_allow_html=True)
 
 except Exception as e:
-    st.error("Error técnico: Revisá las hojas en el Excel."); st.write(e)
+    st.error(f"Error técnico: {e}")
