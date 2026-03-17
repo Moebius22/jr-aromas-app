@@ -21,10 +21,10 @@ def check_password():
     st.markdown('<h2 style="color: #2e7d32; text-align: center;">🔐 Acceso Restringido - JR Aromas</h2>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        password_input = st.text_input("JR2026", type="password")
+        password_input = st.text_input("Ingresá la contraseña para gestionar el inventario", type="password")
         if st.button("Entrar"):
             # --- CAMBIÁ LA CONTRASEÑA ACÁ ---
-            if password_input == "admin123": 
+            if password_input == "JR2026": 
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
