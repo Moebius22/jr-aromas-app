@@ -1,3 +1,9 @@
+Perfecto, vamos a ajustar la "función del reporte" para que haga esa limpieza automática. Ahora, cuando generes el Reporte de Inventario, el código va a filtrar solo esas 4 columnas (ID, Producto, Categoría, Cantidad) y va a ignorar el precio o las fragancias, para que sea un informe técnico de stock bien limpio.
+
+Aquí tenés el código completo para copiar y reemplazar en GitHub:
+
+app.py (Versión con Reporte Filtrado)
+Python
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
@@ -21,13 +27,13 @@ st.markdown("""
     .btn-reporte > div > button { background-color: #1976d2 !important; color: white !important; }
     .alerta-stock {
         background-color: #ffebee; color: #c62828; padding: 10px;
-        border-radius: 8px; border-left: 5px solid #c62828; margin-bottom: 10px;
+        border-radius: 8px; border-left: 5px solid #c62828; margin-bottom: 10px; font-family: sans-serif;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # 3. Encabezado con Logo
-logo_path = "logo.PNG"
+logo_path = "logo.png"
 col_l, col_t = st.columns([1, 4])
 with col_l:
     if os.path.exists(logo_path): st.image(logo_path, width=120)
@@ -44,6 +50,7 @@ def get_html_report(df, titulo):
     html = f"""
     <html>
     <head>
+        <meta charset="UTF-8">
         <style>
             body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; color: #333; }}
             h1 {{ color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 10px; }}
@@ -59,15 +66,15 @@ def get_html_report(df, titulo):
         <h1>{titulo}</h1>
         <p class="info">Generado el: {now} | JR Aromas de Autor</p>
         {df.to_html(index=False)}
-        <div class="footer">Sistema de Gestión Interna - Pehuajó, Buenos Aires</div>
+        <div class="footer">Sistema de Gestión Interna - JR Aromas</div>
     </body>
     </html>
     """
     return html
 
 def download_link(content, filename, text):
-    """Crea un botón de descarga para el archivo HTML."""
-    b64 = base64.b64encode(content.encode()).decode()
+    """Crea un enlace de descarga para el archivo HTML."""
+    b64 = base64.b64encode(content.encode('utf-8')).decode()
     return f'<a href="data:text/html;base64,{b64}" download="{filename}" style="text-decoration: none;"><button style="width:100%; background-color:#1976d2; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">{text}</button></a>'
 
 try:
@@ -76,11 +83,12 @@ try:
 
     tabs = st.tabs(["📦 Stock", "🛒 Venta", "➕ Cargar", "📜 Historial", "📊 Reportes y Alertas"])
 
-    # Pestaña Stock e Historial (se mantienen igual que antes...)
     with tabs[0]:
+        st.write("### Inventario Actual")
         st.dataframe(df_stock, use_container_width=True, hide_index=True)
 
     with tabs[1]:
+        st.write("### Registrar Venta")
         with st.form("v"):
             p = st.selectbox("Producto", df_stock['Producto'].tolist())
             c = st.number_input("Cantidad", min_value=1)
@@ -94,6 +102,7 @@ try:
                     st.success("Venta realizada"); st.rerun()
 
     with tabs[2]:
+        st.write("### Alta de Producto")
         with st.form("n"):
             n = st.text_input("Nombre"); cat = st.selectbox("Cat", ["Textil", "Difusor", "Auto", "Otros"])
             q = st.number_input("Stock", min_value=1); pr = st.number_input("Precio", min_value=0.0)
@@ -103,9 +112,10 @@ try:
                 st.success("Guardado"); st.rerun()
 
     with tabs[3]:
+        st.write("### Historial de Ventas")
         st.dataframe(df_ventas.sort_index(ascending=False), use_container_width=True, hide_index=True)
 
-    # --- NUEVA PESTAÑA: REPORTES Y ALERTAS ---
+    # --- PESTAÑA DE REPORTES Y ALERTAS FILTRADA ---
     with tabs[4]:
         st.write("### ⚠️ Alertas de Reposición")
         bajo_stock = df_stock[df_stock['Cantidad'] < 5]
@@ -116,19 +126,24 @@ try:
             st.success("✅ Todo el stock está en niveles óptimos.")
 
         st.divider()
-        st.write("### 📥 Descargar Reportes (HTML)")
+        st.write("### 📥 Descargar Reportes")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.info("Reporte de Stock Actual")
-            reporte_s = get_html_report(df_stock, "Reporte de Inventario - JR Aromas")
+            st.info("Reporte de Stock a la Fecha")
+            # --- FILTRO DE COLUMNAS SOLICITADO ---
+            columnas_reporte = ["ID", "Producto", "Categoría", "Cantidad"]
+            # Verificamos que las columnas existan para evitar errores
+            columnas_validas = [col for col in columnas_reporte if col in df_stock.columns]
+            df_reporte_stock = df_stock[columnas_validas]
+            
+            reporte_s = get_html_report(df_reporte_stock, "Reporte de Inventario Físico")
             st.markdown(download_link(reporte_s, f"stock_{datetime.now().strftime('%d_%m_%Y')}.html", "Descargar Reporte Stock"), unsafe_allow_html=True)
             
         with col2:
-            st.info("Reporte de Ventas por Fecha")
-            # Filtro opcional por fecha aquí si quisieras, por ahora bajamos todo el historial
-            reporte_v = get_html_report(df_ventas, "Historial de Ventas - JR Aromas")
+            st.info("Reporte de Ventas")
+            reporte_v = get_html_report(df_ventas, "Historial de Ventas")
             st.markdown(download_link(reporte_v, f"ventas_{datetime.now().strftime('%d_%m_%Y')}.html", "Descargar Reporte Ventas"), unsafe_allow_html=True)
 
 except Exception as e:
-    st.error("Error"); st.write(e)
+    st.error("Error técnico"); st.write(e)
